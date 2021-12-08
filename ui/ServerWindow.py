@@ -127,7 +127,7 @@ class ServerWindow(QWidget):
         self.show()
 
     def start_button_clicked(self):
-        pass
+        pass 
 
     def end_button_clicked(self):
         pass

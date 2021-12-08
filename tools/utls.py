@@ -207,8 +207,6 @@ def listen_thread_for_client(sock, event, is_logined, sym_key_of_client=None ,pr
         else:
             return 
 
-
-
 class ClientMainWorker:
     def __init__(self, host, port,event,timeout=5,encoding='utf-8',debugging=False):
         self.host = host

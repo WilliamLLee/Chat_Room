@@ -211,15 +211,15 @@ class ClientMainWorker:
     def __init__(self, host, port,event,timeout=5,encoding='utf-8',debugging=False):
         self.host = host
         self.port = port
-        self.sock = self._create_socket(timeout)
         self.__encoding = encoding
         self.event = event
-        self.__debugging = debugging
+        self.debugging = debugging
         self.user_dict = {}
         self.task_list = []
         self.server_addr = None
         self.username = None
         self.is_logined = threading.Event()
+        self.sock = self._create_socket(timeout)
 
         # rsa decryption
         self.rsa_key =  rsa.newkeys(2048)
@@ -246,14 +246,16 @@ class ClientMainWorker:
         sock_void =  False
         while not sock_void:
             try:
-                self.sock = sk.socket(sk.AF_INET, sk.SOCK_DGRAM)
-                self.sock.bind((self.host, self.port))
-                self.sock.settimeout(timeout)
+                sock = sk.socket(sk.AF_INET, sk.SOCK_DGRAM)
+                sock.bind((self.host, self.port))
+                sock.settimeout(timeout)
                 sock_void = True
             except Exception:
                 sock_void = False
                 self.port+=1
-        return self.sock
+        if self.debugging: 
+            print('[+] Socket created on port:', self.port)
+        return sock
 
     def login(self,host,port,username):
         self.username = username
@@ -282,7 +284,7 @@ class ClientMainWorker:
 
     def send(self, host, port, user_name, msg):
         if host+user_name not in self.user_dict.keys():
-            if self.__debugging: print('[-] User not in user dict', host+user_name)
+            if self.debugging: print('[-] User not in user dict', host+user_name)
             return False
         encrypt_key = self.user_dict[host+user_name][0]
         f = Fernet(encrypt_key)
@@ -304,7 +306,7 @@ class ClientMainWorker:
                 self.socket.sendto(sendmsg, (user[2], user[3]))
 
     def run(self):
-        self.recv_thread = threading.Thread(target=listen_thread_for_client, args=(self.sock, self.event, self.is_logined, self.sym_key, self.private_key, self.__debugging,self.task_list, self.user_dict))
+        self.recv_thread = threading.Thread(target=listen_thread_for_client, args=(self.sock, self.event, self.is_logined, self.sym_key, self.private_key, self.debugging,self.task_list, self.user_dict))
         self.recv_thread.start()
 
     def get_task_list(self):
@@ -323,7 +325,7 @@ class SeverMainWorker:
     def __init__(self, host, port, event,is_debuging=False):
         self.host = host
         self.port = port
-        self.__debugging = is_debuging
+        self.debugging = is_debuging
         self.event = event
         self.user_dict = {}
 
@@ -339,17 +341,18 @@ class SeverMainWorker:
             self.sock.bind((self.host, self.port))
             self.sock.settimeout(5)
         except Exception as e:
-            if self.__debugging: print('Run Server Error', e)
+            if self.debugging: print('Run Server Error', e)
             return
-        self.recv_thread = threading.Thread(target=listen_thread_for_server, args=(self.sock, self.event,  self.__debugging,  self.user_dict))
+        self.recv_thread = threading.Thread(target=listen_thread_for_server, args=(self.sock, self.event,  self.debugging,  self.user_dict))
         self.recv_thread.start()
-        if self.__debugging: print('Server is running!')
+        if self.debugging: print('Server is running!')
 
     def get_user_list(self):
         return self.user_dict.values()
 
     def close(self):
         self.sock.close()
+        if self.debugging : print('Server is closed!')
 
 if __name__ == '__main__':
     host = get_ip_address(sk.gethostname())

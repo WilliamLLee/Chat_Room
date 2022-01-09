@@ -241,6 +241,7 @@ class ClientWindow(QWidget):
         self.ip_address.setEnabled(True)
         self.port.setEnabled(True)
         self.name.setEnabled(True)
+        self.user_list_table.clearContents()
 
     def send_button_clicked(self):
         pass 

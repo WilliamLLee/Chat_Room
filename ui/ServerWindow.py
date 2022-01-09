@@ -3,6 +3,10 @@ from PyQt5.QtGui import QFont, QIcon, QTextCursor
 from PyQt5.QtCore import QRect, QSize
 
 import threading
+import time
+from tools.utls import get_ip_address,SeverMainWorker
+import socket as sk
+from config.config import server_port
 
 class ServerWindow(QWidget):
     '''
@@ -44,7 +48,7 @@ class ServerWindow(QWidget):
         self.debug_flag = debug_flag
 
         # set the icon path
-        self.icon_path = "icon.ico"
+        self.icon_path = "icon_server.ico"
 
         # set the threading event
         self.thread_event = threading.Event()
@@ -81,7 +85,7 @@ class ServerWindow(QWidget):
         total_layout = QVBoxLayout()
         top_layout = QHBoxLayout()
         middle_layout = QVBoxLayout()
-        bottom_layout = QHBoxLayout()
+        bottom_layout = QHBoxLayout()     
 
         # set the top layout
         top_layout.addWidget(QLabel("IP Address:"))
@@ -123,13 +127,54 @@ class ServerWindow(QWidget):
         # set the widget
         self.setLayout(total_layout)
 
+        # set the ip_address
+        ipaddr = get_ip_address(sk.gethostname())
+        self.set_ip_address(ipaddr)
+
+        self.set_port(server_port)
+
         # show the window
         self.show()
 
     def start_button_clicked(self):
-        pass 
+        if self.ip_address.text() == "":
+            self.log_display_append("Please input the ip address!")
+            return
+        if self.port.text() == "":
+            self.log_display_append("Please input the port!")
+            return
+        self.log_display_append("Start Server!")
+        try:
+            self.server = SeverMainWorker(self.ip_address.text(),int(self.port.text()),self.thread_event,self.debug_flag)
+            self.server.run()
+        except Exception as e:
+            self.log_display_append("Start Server Error: "+str(e))
+            return
+
+        self.log_display_append("Start Server Successfully on "+self.ip_address.text()+":"+self.port.text())
+        self.thread_event.set()
+        self.disp_thread = threading.Thread(target=self.disp_thread_func,args=(self.thread_event,))
+        self.disp_thread.start()
+        pass
+
+    def disp_thread_func(self,event):
+        while event.is_set():
+            try:
+                user_list = [user[2:] for user in self.server.get_user_list()]
+                if len(user_list) != self.user_list_table.rowCount():
+                    self.set_user_list_tabel(user_list)
+                else:
+                    time.sleep(5)
+            except Exception as e:
+                self.set_state_info("Get user list failed! %s"%e)
+                return
 
     def end_button_clicked(self):
+        self.log_display_append("End Server!")
+        self.server.close()
+        self.thread_event.clear()
+        self.user_list_table_clear()
+        self.log_display_append("End Server Success!")
         pass
 
     def log_display_append(self,text):
@@ -140,7 +185,7 @@ class ServerWindow(QWidget):
         self.log_display.clear()
 
     def user_list_table_clear(self):
-        self.user_list_table.clear()
+        self.user_list_table.clearContents()
 
     def set_user_list_tabel(self,display_table):
         self.display_table.setRowCount(len(display_table))
@@ -154,6 +199,11 @@ class ServerWindow(QWidget):
     def set_state_info(self,text):
         self.state_info.setText(text)
 
+    def set_ip_address(self,ip_address):
+        self.ip_address.setText(ip_address)
+
+    def set_port(self,port):
+        self.port.setText(str(port))
     
   
 if __name__ == "__main__":

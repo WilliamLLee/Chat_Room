@@ -8,6 +8,8 @@ client_window_name = 'ChatClient'
 
 server_window_name = 'ChatServer'
 
+encoding = 'utf-8'
+
 MAXSIZE = 2048
 
 server_port = 3000

@@ -241,7 +241,6 @@ class ClientWindow(QWidget):
                         assert(self.sym_key != None)
                         f = Fernet(self.sym_key)  # Create a Fernet object with the key.
                         recv_user_info = pickle.loads(f.decrypt(eval(data.decode(encoding).split('##')[1])))
-                        # print("faffaf",recv_user_info)
                         lock = threading.Lock()
                         lock.acquire()
                         for key in recv_user_info.keys():
@@ -256,7 +255,6 @@ class ClientWindow(QWidget):
                         for key in del_list:
                             self.user_dict.pop(key)
                         lock.release()
-                        # print("affff",self.user_dict)
                         user_list = [user[1:4] for user in self.user_dict.values()]
                         self.set_user_list_table(user_list)    
                     elif data.decode(encoding).startswith('KEEPALIVE'):
